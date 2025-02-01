@@ -1,11 +1,9 @@
 --HiddenDevs Application
 --By WillDevLua
 
---Server Script
-
 --Declare Roblox Services
 local DataStoreService = game:GetService("DataStoreService")
-local DataStore = DataStoreService:GetDataStore("DataStore")
+local DataStore = DataStoreService:GetDataStore("DataStore")--Creating a data store
 local TweenService = game:GetService("TweenService")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
@@ -17,30 +15,31 @@ local function PlayerAdded(Player)
 	local PlayerId = "Player_"..Player.UserId
 	
 	--Define the leaderstats and values
-	local leaderstats = Instance.new("Folder")
+	local leaderstats = Instance.new("Folder")--Creates a folder to store the player values
 	leaderstats.Parent = Player
-	leaderstats.Name = "leaderstats"
+	leaderstats.Name = "leaderstats"--adds the values within to the roblox inbuilt leaderboards
 	
-	local Points = Instance.new("IntValue")
+	local Points = Instance.new("IntValue")--Creates a value fot the wins
 	Points.Parent = leaderstats
 	Points.Name = "Wins"
-	Points.Value = 0
+	Points.Value = 0--if the player doesn't have value set it to zero
 	
 	--Loads data
 	local Data
 	local success, errormessage = pcall(function()
-		Data = DataStore:GetAsync(PlayerId)
+		Data = DataStore:GetAsync(PlayerId)--Get the data for the player
 	end)
 	
+	--prints accordingly to if the data was loaded correctly
 	if success then
 		if Data then
-			Points.Value = Data.Points
+			Points.Value = Data.Points--If the player already has value then set it to that
 			print("Data Loaded")
 		else
-			print("Player has no data")
+			print("Player has no data")-- if the player doesn't have any data yet
 		end
 	else
-		warn(errormessage)
+		warn(errormessage)--warn if an error
 	end
 end
 
@@ -51,17 +50,18 @@ local function PlayerRemoving(Player)
 	
 	--Save data
 	local Data = {
-		Points = Player:FindFirstChild("leaderstats").Wins.Value
+		Points = Player:FindFirstChild("leaderstats").Wins.Value--Put the values of all the data in a table
 	}
 	
 	local success, errormessage = pcall(function()
-		DataStore:SetAsync(PlayerId, Data)
+		DataStore:SetAsync(PlayerId, Data)--Save the players data to the datastore
 	end)
 	
+	--prints accordingly to if the data was saved correctly
 	if success then
 		print("Data Saved")
 	else
-		warn(errormessage)
+		warn(errormessage)--warn if an error
 	end
 end
 
@@ -69,7 +69,7 @@ end
 game:GetService("Players").PlayerAdded:Connect(PlayerAdded)
 game:GetService("Players").PlayerRemoving:Connect(PlayerRemoving)
 
-wait(2.5)
+task.wait(2.5)
 
 --Round and disaster script
 
@@ -85,84 +85,86 @@ local RoundTime = 20
 --Acid rain function
 local function AcidRain()
 	local AcidRainFolder = game:GetService("Workspace"):FindFirstChild("AcidRain")
-	for i = 1, RoundTime * 4 do
+	for i = 1, RoundTime * 4 do--Making a loop of spawning the acid rain last for the round
 		
-		--Configuring the part
+		--Configuring the part to have acid like properties
 		local AcidRain = Instance.new("Part")
 		AcidRain.Parent = AcidRainFolder
 		AcidRain.Transparency = 0.5
 		AcidRain.BrickColor = BrickColor.new("Bright blue")
 		AcidRain.Material = Enum.Material.Plastic
 		AcidRain.Size = Vector3.new(1, 2, 1)
-		AcidRain.Position = Vector3.new(math.random(75.5, 124.5), 100, math.random(-24.5, 24.5))
+		AcidRain.Position = Vector3.new(math.random(75.5, 124.5), 100, math.random(-24.5, 24.5))--making the acid rain fall within the game zone
 		
 		--Respawn player if they touch the part
 		AcidRain.Touched:Connect(function(Touched)
-			local Humanoid = Touched.Parent:FindFirstChild("Humanoid")
+			local Humanoid = Touched.Parent:FindFirstChild("Humanoid")-- checks if its a player that touched the part
 			if Humanoid then
-				Humanoid.Parent:FindFirstChild("HumanoidRootPart").CFrame = LobbyPart.CFrame
+				Humanoid.Parent:FindFirstChild("HumanoidRootPart").CFrame = LobbyPart.CFrame --Teleports the player back to the lobby
 			end
 		end)
 		
 		--Remove the part
 		task.delay(5, function()
-			AcidRain:Destroy()
+			AcidRain:Destroy()--Remove the part after 5 seconds
 		end)
-		wait(0.25)
+		task.wait(0.25)--the rate at which the rain falls
 	end
 end
 
 --Lava function
 local function Lava()
 	local LavaFolder = game:GetService("Workspace"):FindFirstChild("Lava")
-	local Lava = Instance.new("Part")
+	local Lava = Instance.new("Part")--Create a lava part
 	Lava.Parent = LavaFolder
 	Lava.Name = "Lava"
 	Lava.Anchored = true
 	Lava.BrickColor = BrickColor.new("Bright red")
 	Lava.Material = Enum.Material.Neon
-	Lava.Size = Vector3.new(49.9, 1.99, 49.9)
+	Lava.Size = Vector3.new(49.9, 1.99, 49.9)-- make it cover the game zone
 	Lava.Position = Vector3.new(100, 0, 0)
 	
 	--Make the lava rise
 	local LavaTweenInfo = TweenInfo.new(
-		15,
+		15,--rise for 15 seconds
 		Enum.EasingStyle.Linear,
 		Enum.EasingDirection.In,
 		0,
 		false
 	)
+	
+	--configure the height that it should reach before stopping
 	local LavaTweenGoal = {
-		Size = Vector3.new(Lava.Size.X, 10, Lava.Size.Z),
+		Size = Vector3.new(Lava.Size.X, 10, Lava.Size.Z),--the lava will rise 10 studs up
 		Position = Lava.Position + Vector3.new(0, (10 - Lava.Size.Y) / 2, 0)
 	}
-	local LavaTween = TweenService:Create(Lava, LavaTweenInfo, LavaTweenGoal)
-	wait(RoundTime / 5)
+	local LavaTween = TweenService:Create(Lava, LavaTweenInfo, LavaTweenGoal)--creating the tween
+	task.wait(RoundTime / 5)--give the player some time to get ready
 	LavaTween:Play()
-	task.delay(RoundTime, function()
-		Lava:Destroy()
-	end)
 	
 	--Respawn the player if they touch the lava
 	Lava.Touched:Connect(function(Touched)
 		if Touched.Parent then
-			local Humanoid = Touched.Parent:FindFirstChild("Humanoid")
+			local Humanoid = Touched.Parent:FindFirstChild("Humanoid")--checks if the player touched the part
 			if Humanoid then
-				Humanoid.Parent:FindFirstChild("HumanoidRootPart").CFrame = LobbyPart.CFrame
+				Humanoid.Parent:FindFirstChild("HumanoidRootPart").CFrame = LobbyPart.CFrame--sends the player back to the lobby
 			end
 		end
 	end)
+	
+	task.wait(RoundTime)
+	Lava:Destroy()--removes the lava at the end of the round ready for the next
 end
 
 --Tsunami function
 local function Tsunami()
-	local Tsunami = ReplicatedStorage:FindFirstChild("TsunamiPart"):Clone()
+	local Tsunami = ReplicatedStorage:FindFirstChild("TsunamiPart"):Clone()--creating a tsunami
 	Tsunami.Parent = game:GetService("Workspace"):FindFirstChild("Tsunami")
 	Tsunami.Transparency = 0
 	
-	--Making the tsunami sweep the map
+	--Making the tsunami sweep the map with a tween
 	local TsunamiTweenInfo = TweenInfo.new(
-		20,
+		20,--make the tsunami sweep the map in 20 seconds
 		Enum.EasingStyle.Linear,
 		Enum.EasingDirection.In,
 		0,
@@ -170,10 +172,10 @@ local function Tsunami()
 	)
 	
 	local TsunamiGoal = {
-		CFrame = Tsunami.CFrame - Vector3.new(0, 0, 100)
+		CFrame = Tsunami.CFrame - Vector3.new(0, 0, 100)--Where the tsunami should end up
 	}
 	local TsunamiTween = TweenService:Create(Tsunami, TsunamiTweenInfo, TsunamiGoal)
-	Tsunami.Anchored = false
+	Tsunami.Anchored = true
 	TsunamiTween:Play()
 	
 	--Make the tsunami respwan the player when touched
@@ -181,68 +183,104 @@ local function Tsunami()
 		if Touched.Parent then
 			local Humanoid = Touched.Parent:FindFirstChild("Humanoid")
 			if Humanoid then
-				Humanoid.Parent:FindFirstChild("HumanoidRootPart").CFrame = LobbyPart.CFrame
+				Humanoid.Parent:FindFirstChild("HumanoidRootPart").CFrame = LobbyPart.CFrame--sends the player back to the lobby
 			end
 		end
 	end)
 	
-	--Make the weeker pillars dissapear when touched by the tsunami
-	Tsunami.Touched:Connect(function(Touched)
-		if Touched.Parent == MapAssets:FindFirstChild("Steps") then
-			Touched.CanCollide = false
-			Touched.Transparency = 1
-			task.wait(15)
-			Touched.CanCollide = true
-			Touched.Transparency = 0
-		end
-	end)
-	
-	wait(20)
+	task.wait(20)
 	Tsunami:Destroy()
 end
 
-local Disasters = {"Acid Rain", "Lava", "Tsunami"}
-local TimeEvent = ReplicatedStorage:FindFirstChild("Time")
+local function Flood()
+	local WaterFolder = game:GetService("Workspace"):FindFirstChild("Water")
+	local Flood = Instance.new("Part")--Create water
+	Flood.Parent = WaterFolder
+	Flood.Name = "Water"
+	Flood.Anchored = true
+	Flood.Transparency = 0.5
+	Flood.CanCollide = false
+	Flood.BrickColor = BrickColor.new("Cyan")
+	Flood.Size = Vector3.new(49.9, 1.99, 49.9)-- make it cover the game zone
+	Flood.Position = Vector3.new(100, 0, 0)
+
+	--Make the water rise
+	local FloodTweenInfo = TweenInfo.new(
+		15,--rise for 15 seconds
+		Enum.EasingStyle.Linear,
+		Enum.EasingDirection.In,
+		0,
+		false
+	)
+
+	--configure the height that it should reach before stopping
+	local FloodTweenGoal = {
+		Size = Vector3.new(Flood.Size.X, 10, Flood.Size.Z),--the water will rise 10 studs up
+		Position = Flood.Position + Vector3.new(0, (10 - Flood.Size.Y) / 2, 0)
+	}
+	local FloodTween = TweenService:Create(Flood, FloodTweenInfo, FloodTweenGoal)--creating the tween
+	task.wait(RoundTime / 5)--give the player some time to get ready
+	FloodTween:Play()
+
+	--Respawn the player if they touch the contaminated water
+	Flood.Touched:Connect(function(Touched)
+		if Touched.Parent then
+			local Humanoid = Touched.Parent:FindFirstChild("Humanoid")--checks if the player touched the part
+			if Humanoid then
+				Humanoid.Parent:FindFirstChild("HumanoidRootPart").CFrame = LobbyPart.CFrame--sends the player back to the lobby
+			end
+		end
+	end)
+
+	task.wait(RoundTime)
+	Flood:Destroy()--removes the water at the end of the round ready for the next
+end
+
+local Disasters = {"Acid Rain", "Lava", "Tsunami", "Flood"}--list all of the possible disasters
+local TimeEvent = ReplicatedStorage:FindFirstChild("Time")--declare some events
 local WinEvent = ReplicatedStorage:FindFirstChild("Win")
 local Round
 
 --Round and disaster system
 while true do
 	--Pick a random disaster
-	local RandomDisaster = Disasters[math.random(1, #Disasters)]
+	local RandomDisaster = Disasters[math.random(4, #Disasters)]--picks a random value from the disaster table
 	
 	--Intermission
 	Round = "Intermission"
 	TimeEvent:FireAllClients(IntermissionTime, Round)
-	for i = IntermissionTime, 1, -1 do
-		wait(1)
+	for i = IntermissionTime, 1, -1 do--creating an intermission countdown
+		task.wait(1)
 	end
 	
 	--Teleport the players to the game
-	for i, v in pairs(Players:GetPlayers()) do
-		v.Character:FindFirstChild("HumanoidRootPart").CFrame = GamePart.CFrame
+	for i, v in pairs(Players:GetPlayers()) do--looping thorugh the players
+		v.Character:FindFirstChild("HumanoidRootPart").CFrame = GamePart.CFrame--teleporting all the players to the round
 	end
 	
 	--Spawn the random disaster
 	print(RandomDisaster)
-	if RandomDisaster == "Acid Rain" then
-		task.delay(0, AcidRain)
+	if RandomDisaster == "Acid Rain" then--plays the disaster that was chosen
+		task.spawn(AcidRain)--plays the given function
 	elseif RandomDisaster == "Lava" then
-		task.delay(0, Lava)
+		task.spawn(Lava)
 	elseif RandomDisaster == "Tsunami" then
-		task.delay(0, Tsunami)
+		task.spawn(Tsunami)
+	elseif RandomDisaster == "Flood" then
+		task.spawn(Flood)
 	end
 	
 	--Start the round
 	Round = RandomDisaster
 	TimeEvent:FireAllClients(RoundTime, Round)
 	for i = RoundTime, 1, -1 do
-		wait(1)
+		task.wait(1)
 	end
 	
 	--Give the player a win at the end
 	local WinPart = Instance.new("Part")
 	local WinCooldown = false
+	--configuring the win part
 	WinPart.Parent = game:GetService("Workspace")
 	WinPart.Transparency = 1
 	WinPart.CanCollide = false
@@ -250,107 +288,25 @@ while true do
 	WinPart.Position = Vector3.new(100, 12.5, 0)
 	WinPart.Anchored = true
 	WinPart.Touched:Connect(function(Touched)
-		if not WinCooldown then
+		if not WinCooldown then-- if the player has not already got a win
 			if Touched.Parent then
-				local Humanoid = Touched.Parent:FindFirstChild("Humanoid")
+				local Humanoid = Touched.Parent:FindFirstChild("Humanoid")--checks if the player touched it
 				if Humanoid then
-					local Player = Players:GetPlayerFromCharacter(Touched.Parent)
+					local Player = Players:GetPlayerFromCharacter(Touched.Parent)--detects wether the part is a player
 					if Player then
 						WinCooldown = true
-						Player:FindFirstChild("leaderstats").Wins.Value += 1
+						Player:FindFirstChild("leaderstats").Wins.Value += 1--if the player is in the win part they will get a win
 						WinEvent:FireClient(Player)
 					end
 				end
 			end
 		end
 	end)
-	wait(0.5)
+	task.wait(0.5)
 	WinPart:Destroy()
 	
 	--Teleport the players back to the lobby and reset the loop
 	for i, v in pairs(Players:GetPlayers()) do
-		v.Character:FindFirstChild("HumanoidRootPart").CFrame = LobbyPart.CFrame
+		v.Character:FindFirstChild("HumanoidRootPart").CFrame = LobbyPart.CFrame--teleport the players back to the lobby when the round is over
 	end
 end
-
---Client Script
-
---Declare some variables
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local TweenService = game:GetService("TweenService")
-local TimeEvent = ReplicatedStorage:FindFirstChild("Time")
-local WinEvent = ReplicatedStorage:FindFirstChild("Win")
-local RoundGui = script.Parent:FindFirstChild("RoundFrame"):FindFirstChild("Round")
-local InformationFrame = script.Parent:FindFirstChild("DisasterInformation")
-local InformationGui = InformationFrame:FindFirstChild("Information")
-local DisasterInformationGui = InformationFrame:FindFirstChild("Disaster")
-local WinFrame = script.Parent:FindFirstChild("WinFrame")
-local WinGui = WinFrame:FindFirstChild("WinLabel")
-local StarterGui = game:GetService("StarterGui")
-
---Update the guis
-TimeEvent.OnClientEvent:Connect(function(Time, Round)
-	
-	--Give information about the specific disaster
-	task.delay(0, function()
-		if Round == "Acid Rain" then
-			InformationFrame.Visible = true
-			InformationGui.Text = "Seek shelter and avoid being hit"
-			DisasterInformationGui.Text = "Acid Rain"
-			wait(5)
-			InformationFrame.Visible = false
-		elseif Round == "Lava" then
-			InformationFrame.Visible = true
-			InformationGui.Text = "Find high ground and avoid touching the rising lava"
-			DisasterInformationGui.Text = "Lava"
-			wait(5)
-			InformationFrame.Visible = false
-		elseif Round == "Tsunami" then
-			InformationFrame.Visible = true
-			InformationGui.Text = "Find a sturdy structure to avoid being swept away by the tsunami"
-			DisasterInformationGui.Text = "Tsunami"
-			wait(5)
-			InformationFrame.Visible = false
-		end
-	end)
-	
-	--Update the main round and timer gui
-	for i = Time, 1, -1 do
-		RoundGui.Text = Round..": "..i
-		wait(1)
-	end
-end)
-
---Win pop up
-local function TweenWinGui()
-	
-	--Tween it to fade out
-	local WinGuiTweenInfo = TweenInfo.new(
-		1,
-		Enum.EasingStyle.Sine,
-		Enum.EasingDirection.In,
-		0,
-		false
-	)
-	
-	local WinGuiGoal = {
-		TextStrokeTransparency = 1,
-		TextTransparency = 1
-	}
-	local WinTween = TweenService:Create(WinGui, WinGuiTweenInfo, WinGuiGoal)
-	WinTween:Play()
-end
-
---Make the win pop up
-WinEvent.OnClientEvent:Connect(function()
-	WinFrame.Visible = true
-	wait(1)
-	TweenWinGui()
-	wait(1)
-	WinGui.TextStrokeTransparency = 0
-	WinGui.TextTransparency = 0
-	WinFrame.Visible = false
-end)
-
---Disable reseting character
-StarterGui:SetCore("ResetButtonCallback", false)
