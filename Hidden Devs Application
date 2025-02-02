@@ -1,79 +1,65 @@
 --HiddenDevs Application
 --By WillDevLua
 
---Declare Roblox Services
-local DataStoreService = game:GetService("DataStoreService")
-local DataStore = DataStoreService:GetDataStore("DataStore")--Creating a data store
-local TweenService = game:GetService("TweenService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
---Data Script
+--Creating variables to store roblox services. GetService is a method to retrieve different game services.
+local DataStoreService = game:GetService("DataStoreService")--Handles saving and loading data
+local DataStore = DataStoreService:GetDataStore("DataStore")
+local TweenService = game:GetService("TweenService")--Handles animations
+local ReplicatedStorage = game:GetService("ReplicatedStorage")--Handles server and client communication
 
---Data Loading function for when the player joins
 local function PlayerAdded(Player)
-	--Get the player Id
-	local PlayerId = "Player_"..Player.UserId
+	local PlayerId = "Player_"..Player.UserId--Creates a unique identifier for each player, using the player's id
 	
-	--Define the leaderstats and values
-	local leaderstats = Instance.new("Folder")--Creates a folder to store the player values
-	leaderstats.Parent = Player
-	leaderstats.Name = "leaderstats"--adds the values within to the roblox inbuilt leaderboards
+	local leaderstats = Instance.new("Folder")--Instance.new creates a new object in the game
+	leaderstats.Parent = Player--Place the leaderstats folder in the player. This makes it accesable to store data specific to the player
+	leaderstats.Name = "leaderstats"
 	
-	local Points = Instance.new("IntValue")--Creates a value fot the wins
-	Points.Parent = leaderstats
+	local Points = Instance.new("IntValue")--Creating an IntValue stores integer values
+	Points.Parent = leaderstats--Place the points value within the players leaderstats folder
 	Points.Name = "Wins"
-	Points.Value = 0--if the player doesn't have value set it to zero
+	Points.Value = 0--Sets the default data value to zero
 	
-	--Loads data
-	local Data
-	local success, errormessage = pcall(function()
-		Data = DataStore:GetAsync(PlayerId)--Get the data for the player
+	local success, Data = pcall(function()--Pcall is used to prevent errors in the script
+		return DataStore:GetAsync(PlayerId)--If the function succeeds, the data will be returned
 	end)
 	
-	--prints accordingly to if the data was loaded correctly
-	if success then
-		if Data then
-			Points.Value = Data.Points--If the player already has value then set it to that
-			print("Data Loaded")
-		else
-			print("Player has no data")-- if the player doesn't have any data yet
-		end
+	if not success then--Checks if the data retrieval fails
+		warn("Data loading error:", Data)--warns the error message
+		return--stops the function from running
+	end
+	if Data then--checks if the player already has data
+		Points.Value = Data.Points--Update the players value to the saved data
+		print(PlayerId.."'s data loaded")
 	else
-		warn(errormessage)--warn if an error
+		print("Player has no data")
 	end
 end
 
---Data Saving function for when player leaves
 local function PlayerRemoving(Player)
-	--Get the player Id
-	local PlayerId = "Player_"..Player.UserId
-	
-	--Save data
-	local Data = {
-		Points = Player:FindFirstChild("leaderstats").Wins.Value--Put the values of all the data in a table
+	local PlayerId = "Player_"..Player.UserId--Creates a unique identifier for each player, using the player's id
+	local Data = {--Creates a table that will contain the data that needs to be saved
+		Points = Player:FindFirstChild("leaderstats").Wins.Value--Creates a value to store when the player leaves
 	}
 	
-	local success, errormessage = pcall(function()
-		DataStore:SetAsync(PlayerId, Data)--Save the players data to the datastore
+	local success, errormessage = pcall(function()--if the function fails it will return an error message 
+		DataStore:SetAsync(PlayerId, Data)--SetAsync sets the player's values and id to the datastore/key
 	end)
 	
-	--prints accordingly to if the data was saved correctly
-	if success then
-		print("Data Saved")
+	if not success then
+		warn(errormessage)--if the function has failded warn the errormessage
+		return
 	else
-		warn(errormessage)--warn if an error
+		print("Data Saved")
 	end
 end
 
---Call the data functions for when the player leaves and joins
-game:GetService("Players").PlayerAdded:Connect(PlayerAdded)
-game:GetService("Players").PlayerRemoving:Connect(PlayerRemoving)
+game:GetService("Players").PlayerAdded:Connect(PlayerAdded)--Connects the PlayerAdded function to the event
+game:GetService("Players").PlayerRemoving:Connect(PlayerRemoving)--executes the playerremoving event to the playerremoving event
 
 task.wait(2.5)
 
---Round and disaster script
-
---Declare variables
+--Declare some variables for the round and disaster system
 local Players = game:GetService("Players")
 local TeleportFolder = game:GetService("Workspace"):FindFirstChild("TeleportParts")
 local LobbyPart = TeleportFolder:FindFirstChild("Lobby")
@@ -82,231 +68,216 @@ local MapAssets = game:GetService("Workspace"):FindFirstChild("MapAssets")
 local IntermissionTime = 10
 local RoundTime = 20
 
---Acid rain function
 local function AcidRain()
-	local AcidRainFolder = game:GetService("Workspace"):FindFirstChild("AcidRain")
-	for i = 1, RoundTime * 4 do--Making a loop of spawning the acid rain last for the round
-		
-		--Configuring the part to have acid like properties
+	local AcidRainFolder = game:GetService("Workspace"):FindFirstChild("AcidRain")--Checks if the acid rain folder in the workspace exists and creates a variable to it
+	if not AcidRainFolder then return end--if the folder doesn't exist, end the function so no further error occur
+	for i = 1, RoundTime * 4 do--creates a loop to spawn acid rain like parts every second
 		local AcidRain = Instance.new("Part")
+		--Configure the parts properties
 		AcidRain.Parent = AcidRainFolder
 		AcidRain.Transparency = 0.5
 		AcidRain.BrickColor = BrickColor.new("Bright blue")
 		AcidRain.Material = Enum.Material.Plastic
-		AcidRain.Size = Vector3.new(1, 2, 1)
-		AcidRain.Position = Vector3.new(math.random(75.5, 124.5), 100, math.random(-24.5, 24.5))--making the acid rain fall within the game zone
-		
-		--Respawn player if they touch the part
-		AcidRain.Touched:Connect(function(Touched)
-			local Humanoid = Touched.Parent:FindFirstChild("Humanoid")-- checks if its a player that touched the part
-			if Humanoid then
-				Humanoid.Parent:FindFirstChild("HumanoidRootPart").CFrame = LobbyPart.CFrame --Teleports the player back to the lobby
+		AcidRain.Size = Vector3.new(1, 2, 1)--Vector3 is a data type which represents a vector in 3d space
+		AcidRain.Position = Vector3.new(math.random(75.5, 124.5), 100, math.random(-24.5, 24.5))--sets the position of the parts to random cordinates within the game zone
+		AcidRain.Touched:Connect(function(Touched)--Each acid part listens to see if it's touched using the Touched event
+			local HumanoidRootPart = Touched.Parent:FindFirstChild("HumanoidRootPart")--Checks if the touched part is a player's character, if it is then we get the player's humanoidrootpart
+			if not HumanoidRootPart then return end--If the HumanoidRootPart doesn't exist then exit the loop
+			if HumanoidRootPart then
+				HumanoidRootPart.CFrame = LobbyPart.CFrame--teleport the player's character to the position of the lobby teleport part
 			end
 		end)
 		
-		--Remove the part
-		task.delay(5, function()
-			AcidRain:Destroy()--Remove the part after 5 seconds
+		task.delay(5, function()--after 5 seconds it creates a function
+			AcidRain:Destroy()--Destroy: deletes an object from the game
 		end)
-		task.wait(0.25)--the rate at which the rain falls
+		task.wait(0.25)--add a cooldown of 0.25 to prevent lag
 	end
 end
 
---Lava function
 local function Lava()
-	local LavaFolder = game:GetService("Workspace"):FindFirstChild("Lava")
-	local Lava = Instance.new("Part")--Create a lava part
-	Lava.Parent = LavaFolder
+	local LavaFolder = game:GetService("Workspace"):FindFirstChild("Lava")--Checks if the lava folder is in the workspace and creates a variable to it
+	if not LavaFolder then return end--if the lava folder doesn't exist then end the function
+	local Lava = Instance.new("Part")--instance.new creates a new object into the game, in this case a part
+	Lava.Parent = LavaFolder--puts the part into the folder, located within the workspace
 	Lava.Name = "Lava"
 	Lava.Anchored = true
 	Lava.BrickColor = BrickColor.new("Bright red")
 	Lava.Material = Enum.Material.Neon
-	Lava.Size = Vector3.new(49.9, 1.99, 49.9)-- make it cover the game zone
+	Lava.Size = Vector3.new(49.9, 1.99, 49.9)--Vector3 is a data type which represents a vector in 3d space
 	Lava.Position = Vector3.new(100, 0, 0)
 	
-	--Make the lava rise
 	local LavaTweenInfo = TweenInfo.new(
-		15,--rise for 15 seconds
-		Enum.EasingStyle.Linear,
+		15,--Sets the tween to last for 15 seconds
+		Enum.EasingStyle.Linear,--enum is used to chose a style for which the tween will run, in our case it will be linear/normal
 		Enum.EasingDirection.In,
-		0,
-		false
+		0,--ensures that the tween doesn't repeat
+		false--ensures that the tween doesn't reverse
 	)
 	
-	--configure the height that it should reach before stopping
-	local LavaTweenGoal = {
-		Size = Vector3.new(Lava.Size.X, 10, Lava.Size.Z),--the lava will rise 10 studs up
+	local LavaTweenGoal = {--creates a table for the desired properties that the tween will result in
+		Size = Vector3.new(Lava.Size.X, 10, Lava.Size.Z),--vector3 is used to configure the part to grow up to 10 studs on the Y axis
 		Position = Lava.Position + Vector3.new(0, (10 - Lava.Size.Y) / 2, 0)
 	}
-	local LavaTween = TweenService:Create(Lava, LavaTweenInfo, LavaTweenGoal)--creating the tween
-	task.wait(RoundTime / 5)--give the player some time to get ready
-	LavaTween:Play()
+	local LavaTween = TweenService:Create(Lava, LavaTweenInfo, LavaTweenGoal)--creates a variable for the tween ready to be played
+	task.wait(RoundTime / 5)--waits one fith of the round time to give players to prepare, using the task.wait function to avoid bugs and reduce lag
+	LavaTween:Play()--Plays the lava rising tween
 	
-	--Respawn the player if they touch the lava
-	Lava.Touched:Connect(function(Touched)
-		if Touched.Parent then
-			local Humanoid = Touched.Parent:FindFirstChild("Humanoid")--checks if the player touched the part
-			if Humanoid then
-				Humanoid.Parent:FindFirstChild("HumanoidRootPart").CFrame = LobbyPart.CFrame--sends the player back to the lobby
+	Lava.Touched:Connect(function(Touched)--Uses the touched event to connect to a function
+		if Touched.Parent then--the if statement is checking to see if a player touched the part
+			local HumanoidRootPart = Touched.Parent:FindFirstChild("HumanoidRootPart")--creates a variable for the players position
+			if not HumanoidRootPart then return end--if the humanoid doesn't exist then end the function
+			if HumanoidRootPart then
+				HumanoidRootPart.CFrame = LobbyPart.CFrame--sets their position, using CFrame (describes a 3D position and orientation), to the lobby's position
 			end
 		end
 	end)
 	
-	task.wait(RoundTime)
-	Lava:Destroy()--removes the lava at the end of the round ready for the next
+	task.wait(RoundTime)--waits 20 seconds before continuing the code, using task.wait which is used to reduce lag and waits for the server
+	Lava:Destroy()--Removes the lava object from the game, using the Destory() function
 end
 
---Tsunami function
 local function Tsunami()
-	local Tsunami = ReplicatedStorage:FindFirstChild("TsunamiPart"):Clone()--creating a tsunami
-	Tsunami.Parent = game:GetService("Workspace"):FindFirstChild("Tsunami")
+	local Tsunami = ReplicatedStorage:FindFirstChild("TsunamiPart"):Clone()--Checks if the tsunami is there and links it to a variable
+	if not Tsunami then return end--if the tsunami folder doesn't exist it end the function
+	Tsunami.Parent = game:GetService("Workspace"):FindFirstChild("Tsunami")--put's the tsunami into the workspace by parenting it to a folder
 	Tsunami.Transparency = 0
 	
-	--Making the tsunami sweep the map with a tween
+	--Creating the tween style
 	local TsunamiTweenInfo = TweenInfo.new(
-		20,--make the tsunami sweep the map in 20 seconds
-		Enum.EasingStyle.Linear,
+		20,--makes the tweek ;ast 20 seconds
+		Enum.EasingStyle.Linear,--choses the way in which the tsunami will tween
 		Enum.EasingDirection.In,
-		0,
-		false
+		0,--ensures that the tween doesn't repeat
+		false--ensures that the tween doesn't reverse
 	)
 	
-	local TsunamiGoal = {
-		CFrame = Tsunami.CFrame - Vector3.new(0, 0, 100)--Where the tsunami should end up
+	local TsunamiGoal = {--creates a table to contain the end goal of the tween
+		CFrame = Tsunami.CFrame - Vector3.new(0, 0, 100)--the tsunami will travel 100 studs on the Z axis
 	}
-	local TsunamiTween = TweenService:Create(Tsunami, TsunamiTweenInfo, TsunamiGoal)
+	local TsunamiTween = TweenService:Create(Tsunami, TsunamiTweenInfo, TsunamiGoal)--creates a tween to later be called
 	Tsunami.Anchored = true
-	TsunamiTween:Play()
+	TsunamiTween:Play()--plays the tsunamitween
 	
-	--Make the tsunami respwan the player when touched
-	Tsunami.Touched:Connect(function(Touched)
-		if Touched.Parent then
-			local Humanoid = Touched.Parent:FindFirstChild("Humanoid")
-			if Humanoid then
-				Humanoid.Parent:FindFirstChild("HumanoidRootPart").CFrame = LobbyPart.CFrame--sends the player back to the lobby
+	Tsunami.Touched:Connect(function(Touched)--Uses the touched event to connect to a function
+		if Touched.Parent then--the if statement is checking to see if a player touched the part
+			local HumanoidRootPart = Touched.Parent:FindFirstChild("HumanoidRootPart")--creates a variable for the players position
+			if not HumanoidRootPart then return end--if the humanoid doesn't exist then end the function
+			if HumanoidRootPart then
+				HumanoidRootPart.CFrame = LobbyPart.CFrame--sets their position, using CFrame (describes a 3D position and orientation), to the lobby's position
 			end
 		end
 	end)
 	
-	task.wait(20)
-	Tsunami:Destroy()
+	task.wait(RoundTime)--waits 20 seconds before continuing the code, using task.wait which is used to reduce lag and waits for the server
+	Tsunami:Destroy()--Removes the tsunami object from the game, using the Destory() function
 end
 
 local function Flood()
-	local WaterFolder = game:GetService("Workspace"):FindFirstChild("Water")
-	local Flood = Instance.new("Part")--Create water
+	local WaterFolder = game:GetService("Workspace"):FindFirstChild("Water")--Creates a variable for the waterfolder
+	if not WaterFolder then return end--if the water folder doesn't exist then end the function
+	local Flood = Instance.new("Part")
+	--copnfigure the part properties
 	Flood.Parent = WaterFolder
 	Flood.Name = "Water"
 	Flood.Anchored = true
 	Flood.Transparency = 0.5
 	Flood.CanCollide = false
 	Flood.BrickColor = BrickColor.new("Cyan")
-	Flood.Size = Vector3.new(49.9, 1.99, 49.9)-- make it cover the game zone
+	Flood.Size = Vector3.new(49.9, 1.99, 49.9)--Vector3 is a data type which represents a vector in 3d space
 	Flood.Position = Vector3.new(100, 0, 0)
 
-	--Make the water rise
 	local FloodTweenInfo = TweenInfo.new(
-		15,--rise for 15 seconds
-		Enum.EasingStyle.Linear,
+		15,--makes the tween last 15 seconds
+		Enum.EasingStyle.Linear,--enum is used to retreve a specific easing style from the roblox api
 		Enum.EasingDirection.In,
-		0,
-		false
+		0,--ensures the tween doesn't repeat
+		false--ensures the tween doesn't repeat
 	)
 
-	--configure the height that it should reach before stopping
-	local FloodTweenGoal = {
-		Size = Vector3.new(Flood.Size.X, 10, Flood.Size.Z),--the water will rise 10 studs up
-		Position = Flood.Position + Vector3.new(0, (10 - Flood.Size.Y) / 2, 0)
+	local FloodTweenGoal = {--creates a table to list the changes that will happen to the object
+		Size = Vector3.new(Flood.Size.X, 10, Flood.Size.Z),--Will increase the Y axis by 10 studs
+		Position = Flood.Position + Vector3.new(0, (10 - Flood.Size.Y) / 2, 0)--counteracts the effect, where the y axis increases on the bottom and top, by moving its position accordingly
 	}
-	local FloodTween = TweenService:Create(Flood, FloodTweenInfo, FloodTweenGoal)--creating the tween
-	task.wait(RoundTime / 5)--give the player some time to get ready
-	FloodTween:Play()
+	local FloodTween = TweenService:Create(Flood, FloodTweenInfo, FloodTweenGoal)--creates a variable ready to store a tween/animation
+	task.wait(RoundTime / 5)--waits one fith of the time in order to give the player some preperation time
+	FloodTween:Play()--fires the tween(water rising)
 
-	--Respawn the player if they touch the contaminated water
-	Flood.Touched:Connect(function(Touched)
-		if Touched.Parent then
-			local Humanoid = Touched.Parent:FindFirstChild("Humanoid")--checks if the player touched the part
-			if Humanoid then
-				Humanoid.Parent:FindFirstChild("HumanoidRootPart").CFrame = LobbyPart.CFrame--sends the player back to the lobby
+	Flood.Touched:Connect(function(Touched)--Uses the touched event to connect to a function
+		if Touched.Parent then--the if statement is checking to see if a player touched the part
+			local HumanoidRootPart = Touched.Parent:FindFirstChild("HumanoidRootPart")--creates a variable for the players position
+			if not HumanoidRootPart then return end--if the humanoid doesn't exist then end the function
+			if HumanoidRootPart then
+				HumanoidRootPart.CFrame = LobbyPart.CFrame--sets their position, using CFrame (describes a 3D position and orientation), to the lobby's position
 			end
 		end
 	end)
 
 	task.wait(RoundTime)
-	Flood:Destroy()--removes the water at the end of the round ready for the next
+	Flood:Destroy()
 end
 
-local Disasters = {"Acid Rain", "Lava", "Tsunami", "Flood"}--list all of the possible disasters
-local TimeEvent = ReplicatedStorage:FindFirstChild("Time")--declare some events
-local WinEvent = ReplicatedStorage:FindFirstChild("Win")
+local Disasters = {--Creates a table to list all the disasters
+	["Acid Rain"] = AcidRain,--each disaster is paired to it's corresponding function
+	["Lava"] = Lava,
+	["Tsunami"] = Tsunami,
+	["Flood"] = Flood
+}
+local TimeEvent = ReplicatedStorage:WaitForChild("Time")--Declare some event variables
+local WinEvent = ReplicatedStorage:WaitForChild("Win")
 local Round
 
---Round and disaster system
-while true do
-	--Pick a random disaster
-	local RandomDisaster = Disasters[math.random(1, #Disasters)]--picks a random value from the disaster table
+while true do--creates a loop that runs indefinately
+	local DisasterKeys = {}--creates a table of the disaster names
+	for Key in pairs(Disasters) do--loops through the disasters table
+		table.insert(DisasterKeys, Key)--adds each disaster to the disasterkeys table
+	end
+
+	local RandomDisaster = DisasterKeys[math.random(1, #DisasterKeys)]--picks a random index and the corresponding disaster function is called
 	
-	--Intermission
-	Round = "Intermission"
-	TimeEvent:FireAllClients(IntermissionTime, Round)
-	for i = IntermissionTime, 1, -1 do--creating an intermission countdown
+	Round = "Intermission"--updates the variable to the current round(intermission)
+	TimeEvent:FireAllClients(IntermissionTime, Round)--fires the event to the client to update guis
+	for i = IntermissionTime, 1, -1 do--this loops counts down from the intermissiontime(10) down to 1 before resuming the script
 		task.wait(1)
 	end
 	
-	--Teleport the players to the game
-	for i, v in pairs(Players:GetPlayers()) do--looping thorugh the players
-		v.Character:FindFirstChild("HumanoidRootPart").CFrame = GamePart.CFrame--teleporting all the players to the round
+	for i, v in pairs(Players:GetPlayers()) do--loops through all the players registered in the game
+		v.Character:WaitForChild("HumanoidRootPart").CFrame = GamePart.CFrame--sets their position, using CFrame (describes a 3D position and orientation), to the gamepart's position
 	end
 	
-	--Spawn the random disaster
 	print(RandomDisaster)
-	if RandomDisaster == "Acid Rain" then--plays the disaster that was chosen
-		task.spawn(AcidRain)--plays the given function
-	elseif RandomDisaster == "Lava" then
-		task.spawn(Lava)
-	elseif RandomDisaster == "Tsunami" then
-		task.spawn(Tsunami)
-	elseif RandomDisaster == "Flood" then
-		task.spawn(Flood)
-	end
+	task.spawn(Disasters[RandomDisaster])--task.spawn is used to run the disaster function in a sperate thread so that the game continues playing
 	
-	--Start the round
-	Round = RandomDisaster
-	TimeEvent:FireAllClients(RoundTime, Round)
-	for i = RoundTime, 1, -1 do
+	Round = RandomDisaster--update the round vaiable to the chosen disaster
+	TimeEvent:FireAllClients(RoundTime, Round)--fires the event to the client to update guis
+	for i = RoundTime, 1, -1 do--this loops counts down from the roundtime(20) down to 1 before resuming the script
 		task.wait(1)
 	end
 	
-	--Give the player a win at the end
-	local WinPart = Instance.new("Part")
-	local WinCooldown = false
-	--configuring the win part
+	local Winners = {}--creates a table to register the players that have won
+	local WinPart = Instance.new("Part")--the win part is created, using instance.new, to register the players still in the playing zone
 	WinPart.Parent = game:GetService("Workspace")
-	WinPart.Transparency = 1
+	WinPart.Transparency = 1--makes the part invisible
 	WinPart.CanCollide = false
-	WinPart.Size = Vector3.new(50, 23, 50)
+	WinPart.Size = Vector3.new(50, 23, 50)--the size of the part is created, using vector3.new, to match the game area 
 	WinPart.Position = Vector3.new(100, 12.5, 0)
 	WinPart.Anchored = true
-	WinPart.Touched:Connect(function(Touched)
-		if not WinCooldown then-- if the player has not already got a win
-			if Touched.Parent then
-				local Humanoid = Touched.Parent:FindFirstChild("Humanoid")--checks if the player touched it
-				if Humanoid then
-					local Player = Players:GetPlayerFromCharacter(Touched.Parent)--detects wether the part is a player
-					if Player then
-						WinCooldown = true
-						Player:FindFirstChild("leaderstats").Wins.Value += 1--if the player is in the win part they will get a win
-						WinEvent:FireClient(Player)
-					end
-				end
+	WinPart.Touched:Connect(function(Touched)--runs the function when the event, touched, is called
+		local Player = Players:GetPlayerFromCharacter(Touched.Parent)--finds the player through the parent of the part that touched the part
+		if Player and not Winners[Player.UserId] then--if the player exists and is not already in the win table it runs the following code
+			Winners[Player.UserId] = true--adds the player to the winner table
+			local leaderstats = Player:WaitForChild("leaderstats")--creates a variable for the players leaderstats found within then
+			if leaderstats and leaderstats:FindFirstChild("Wins") then--checks if the leaderstats exists and has the win value  within it, using and if statement
+				leaderstats.Wins.Value += 1--Increases the players wins by one
+				WinEvent:FireClient(Player)
 			end
 		end
 	end)
-	task.wait(0.5)
-	WinPart:Destroy()
-	
-	--Teleport the players back to the lobby and reset the loop
-	for i, v in pairs(Players:GetPlayers()) do
-		v.Character:FindFirstChild("HumanoidRootPart").CFrame = LobbyPart.CFrame--teleport the players back to the lobby when the round is over
+	task.wait(2.5)
+	WinPart:Destroy()--removes the winpart from the game, using the destroy function
+	Winners = {}--resets the winners table to nothing
+
+	for i, v in pairs(Players:GetPlayers()) do--loops through all the players registered in the game
+		v.Character:WaitForChild("HumanoidRootPart").CFrame = LobbyPart.CFrame--sets their position, using CFrame (describes a 3D position and orientation), to the lobbys position
 	end
 end
